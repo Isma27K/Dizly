@@ -1,0 +1,16 @@
+{
+  "train_ratio": 0.8,
+  "keep_near_duplicates": true,
+  "duplicate_resolution": {
+    "exact_duplicate_threshold": 0.99,
+    "near_duplicate_threshold": 0.95,
+    "variation_threshold": 0.85,
+    "semantic_threshold": 0.80
+  },
+  "content_filtering": {
+    "enable_content_filtering": true,
+    "detailed_to_train_ratio": 0.7,
+    "simple_to_test_ratio": 0.6,
+    "complexity_threshold": 0.6
+  }
+}
