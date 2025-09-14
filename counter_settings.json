@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "target_train_ratio": 0.7999999999999999,
+  "show_percentages": true
+}

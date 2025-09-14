@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 from .image_viewer import ImageViewer
 from .highlighter_settings import HighlighterSettings, HighlighterSettingsWidget
+from .counter_settings import CounterSettings, CounterWidget, CounterSettingsWidget
 from .auto_sort_dialog import AutoSortSettingsDialog
 from .auto_sorter import AutoSortWorker
 from .auto_sort_progress import AutoSortProgressDialog, AutoSortResultDialog
@@ -40,6 +41,7 @@ class ImageGridWidget(QtWidgets.QWidget):
         self.grid_container = QtWidgets.QWidget()
         self.grid_layout = QtWidgets.QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(5)
+        self.grid_layout.setAlignment(QtCore.Qt.AlignTop)  # Only align to top, let horizontal stretch
         
         self.scroll_area.setWidget(self.grid_container)
         self.layout.addWidget(self.scroll_area)
@@ -117,6 +119,10 @@ class ImageGridWidget(QtWidgets.QWidget):
         self.images = image_paths
         self.refresh_grid()
         
+        # Update counter display
+        if hasattr(self.main_widget, 'update_counter'):
+            self.main_widget.update_counter()
+        
     def refresh_grid(self):
         """Refresh the grid layout with current images in sorted order."""
         # Sort images by filename
@@ -128,18 +134,38 @@ class ImageGridWidget(QtWidgets.QWidget):
             if child:
                 child.setParent(None)
                 
-        # Calculate columns based on container width
+        # Calculate optimal columns and spacing based on container width
         container_width = self.scroll_area.viewport().width() - 20
-        cols = max(1, container_width // (self.grid_size + 10))
+        min_spacing = 5
+        max_cols = max(1, container_width // (self.grid_size + min_spacing))
+        
+        # Calculate dynamic spacing to fill available width
+        if max_cols > 1:
+            total_thumbnail_width = max_cols * self.grid_size
+            available_spacing = container_width - total_thumbnail_width
+            dynamic_spacing = max(min_spacing, available_spacing // (max_cols + 1))
+        else:
+            dynamic_spacing = min_spacing
+            
+        # Update grid layout spacing
+        self.grid_layout.setSpacing(dynamic_spacing)
+        
+        # Set uniform column stretch to distribute remaining space
+        for col in range(max_cols):
+            self.grid_layout.setColumnStretch(col, 1)
         
         # Add images to grid in sorted order
         for i, image_path in enumerate(self.images):
-            row = i // cols
-            col = i % cols
+            row = i // max_cols
+            col = i % max_cols
             
             # Create image thumbnail
             thumbnail = self.create_thumbnail(image_path)
             self.grid_layout.addWidget(thumbnail, row, col)
+        
+        # Update counter display after all thumbnails are added
+        if hasattr(self.main_widget, 'update_counter'):
+            self.main_widget.update_counter()
             
     def remove_image_instantly(self, image_path):
         """Remove image from grid instantly for immediate visual feedback."""
@@ -159,6 +185,10 @@ class ImageGridWidget(QtWidgets.QWidget):
         # Reorganize remaining thumbnails
         self._reorganize_grid()
         
+        # Update counter display
+        if hasattr(self.main_widget, 'update_counter'):
+            self.main_widget.update_counter()
+        
     def add_image_instantly(self, image_path):
         """Add image to grid instantly for immediate visual feedback without rebuilding."""
         # Calculate target path but use original path for thumbnail creation
@@ -176,10 +206,27 @@ class ImageGridWidget(QtWidgets.QWidget):
             
             # Add thumbnail at the end of the grid for immediate feedback
             container_width = self.scroll_area.viewport().width() - 20
-            cols = max(1, container_width // (self.grid_size + 10))
+            min_spacing = 5
+            max_cols = max(1, container_width // (self.grid_size + min_spacing))
+            
+            # Calculate dynamic spacing to fill available width
+            if max_cols > 1:
+                total_thumbnail_width = max_cols * self.grid_size
+                available_spacing = container_width - total_thumbnail_width
+                dynamic_spacing = max(min_spacing, available_spacing // (max_cols + 1))
+            else:
+                dynamic_spacing = min_spacing
+                
+            # Update grid layout spacing
+            self.grid_layout.setSpacing(dynamic_spacing)
+            
+            # Set uniform column stretch to distribute remaining space
+            for col_idx in range(max_cols):
+                self.grid_layout.setColumnStretch(col_idx, 1)
+            
             current_count = len(self.images) - 1  # Index of the new image
-            row = current_count // cols
-            col = current_count % cols
+            row = current_count // max_cols
+            col = current_count % max_cols
             
             # Create thumbnail with original path and highlight
             thumbnail = self.create_thumbnail(image_path)
@@ -200,6 +247,20 @@ class ImageGridWidget(QtWidgets.QWidget):
         if self.pending_zoom_size is not None:
             self.grid_size = self.pending_zoom_size
             self.pending_zoom_size = None
+            self._resize_thumbnails()
+    
+    def zoom_in(self):
+        """Zoom in the grid (increase thumbnail size)."""
+        new_size = min(400, self.grid_size + 20)
+        if new_size != self.grid_size:
+            self.grid_size = new_size
+            self._resize_thumbnails()
+    
+    def zoom_out(self):
+        """Zoom out the grid (decrease thumbnail size)."""
+        new_size = max(60, self.grid_size - 20)
+        if new_size != self.grid_size:
+            self.grid_size = new_size
             self._resize_thumbnails()
     
     def _resize_thumbnails(self):
@@ -243,13 +304,29 @@ class ImageGridWidget(QtWidgets.QWidget):
             if item:
                 self.grid_layout.removeItem(item)
                 
-        # Re-add widgets in proper positions
+        # Re-add widgets in proper positions with dynamic spacing
         container_width = self.scroll_area.viewport().width() - 20
-        cols = max(1, container_width // (self.grid_size + 10))
+        min_spacing = 5
+        max_cols = max(1, container_width // (self.grid_size + min_spacing))
+        
+        # Calculate dynamic spacing to fill available width
+        if max_cols > 1:
+            total_thumbnail_width = max_cols * self.grid_size
+            available_spacing = container_width - total_thumbnail_width
+            dynamic_spacing = max(min_spacing, available_spacing // (max_cols + 1))
+        else:
+            dynamic_spacing = min_spacing
+            
+        # Update grid layout spacing
+        self.grid_layout.setSpacing(dynamic_spacing)
+        
+        # Set uniform column stretch to distribute remaining space
+        for col in range(max_cols):
+            self.grid_layout.setColumnStretch(col, 1)
         
         for i, widget in enumerate(widgets):
-            row = i // cols
-            col = i % cols
+            row = i // max_cols
+            col = i % max_cols
             self.grid_layout.addWidget(widget, row, col)
             
     def create_thumbnail(self, image_path):
@@ -510,12 +587,15 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         self.setWindowTitle("Dizly")
         self.resize(1400, 900)
         
-        # Initialize highlighter settings manager
-        self.highlighter_settings = HighlighterSettings(self)
+        # Initialize highlighter settings
+        self.highlighter_settings = HighlighterSettings()
+        
+        # Initialize counter settings
+        self.counter_settings = CounterSettings()
         
         # Initialize variables
-        self.train_root = None
-        self.test_root = None
+        self.train_folder = None
+        self.test_folder = None
         self.current_label = None
         self.popup_previews = []  # Track open popups
         
@@ -608,11 +688,48 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         self.highlighter_widget = HighlighterSettingsWidget(self.highlighter_settings)
         layout.addWidget(self.highlighter_widget)
         
+        # Counter settings (using modular widget)
+        self.counter_settings_widget = CounterSettingsWidget(self.counter_settings)
+        layout.addWidget(self.counter_settings_widget)
+        
         self.main_splitter.addWidget(self.left_panel)
         
     def clear_all_highlights(self):
         """Clear all highlights from both train and test grids."""
         self.highlighter_settings.clear_all_highlighted()
+        
+    def update_counter(self):
+        """Update counter display."""
+        train_count = len(self.train_grid.images) if hasattr(self.train_grid, 'images') else 0
+        test_count = len(self.test_grid.images) if hasattr(self.test_grid, 'images') else 0
+        total_count = train_count + test_count
+        
+        # Update counter displays in headers
+        if hasattr(self, 'train_counter_display') and hasattr(self, 'test_counter_display'):
+            if self.counter_settings.enabled:
+                # Update counts
+                self.train_count_label.setText(str(train_count))
+                self.test_count_label.setText(str(test_count))
+                
+                # Update percentages if enabled
+                if self.counter_settings.show_percentages and total_count > 0:
+                    train_pct = (train_count / total_count) * 100
+                    test_pct = (test_count / total_count) * 100
+                    self.train_percentage_label.setText(f"({train_pct:.1f}%)")
+                    self.test_percentage_label.setText(f"({test_pct:.1f}%)")
+                    self.train_percentage_label.show()
+                    self.test_percentage_label.show()
+                else:
+                    self.train_percentage_label.hide()
+                    self.test_percentage_label.hide()
+                
+                # Show counter displays
+                self.train_counter_display.show()
+                self.test_counter_display.show()
+            else:
+                # Hide counter displays
+                self.train_counter_display.hide()
+                self.test_counter_display.hide()
         
     def create_right_panel(self):
         """Create the right panel with train/test grids."""
@@ -640,6 +757,9 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         """)
         right_layout.addWidget(self.toggle_btn)
         
+        # Connect counter settings changes to update display
+        self.counter_settings.settings_changed.connect(self.update_counter)
+        
         # Create splitter for train/test sections
         self.train_test_splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         
@@ -648,7 +768,7 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         test_layout = QtWidgets.QVBoxLayout(test_widget)
         test_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Test header with refresh button
+        # Test header with counter and refresh button
         test_header_widget = QtWidgets.QWidget()
         test_header_layout = QtWidgets.QHBoxLayout(test_header_widget)
         test_header_layout.setContentsMargins(0, 0, 0, 0)
@@ -665,6 +785,40 @@ class FolderSelectorWidget(QtWidgets.QWidget):
             }
         """)
         test_header.setAlignment(QtCore.Qt.AlignCenter)
+        
+        # Add test counter display
+        self.test_counter_display = QtWidgets.QWidget()
+        test_counter_layout = QtWidgets.QHBoxLayout(self.test_counter_display)
+        test_counter_layout.setContentsMargins(8, 4, 8, 4)
+        test_counter_layout.setSpacing(4)
+        
+        self.test_count_label = QtWidgets.QLabel("0")
+        self.test_count_label.setStyleSheet("""
+            QLabel {
+                font-weight: bold;
+                font-size: 16px;
+                color: #388e3c;
+            }
+        """)
+        
+        self.test_percentage_label = QtWidgets.QLabel("(0%)")
+        self.test_percentage_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #666;
+            }
+        """)
+        
+        test_counter_layout.addWidget(self.test_count_label)
+        test_counter_layout.addWidget(self.test_percentage_label)
+        
+        self.test_counter_display.setStyleSheet("""
+            QWidget {
+                background-color: #e8f5e8;
+                border-radius: 4px;
+                padding: 4px;
+            }
+        """)
         
         test_refresh_btn = QtWidgets.QPushButton("🔄 Sort")
         test_refresh_btn.setMaximumWidth(60)
@@ -684,6 +838,9 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         test_refresh_btn.clicked.connect(lambda: self.test_grid.refresh_grid())
         
         test_header_layout.addWidget(test_header)
+        test_header_layout.addWidget(self.test_counter_display)
+        test_header_layout.addStretch()
+        
         test_header_layout.addWidget(test_refresh_btn)
         test_layout.addWidget(test_header_widget)
         
@@ -692,12 +849,51 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         self.test_grid.setStyleSheet("QWidget { border: 2px dashed #4caf50; background-color: #f8fff8; }")
         test_layout.addWidget(self.test_grid)
         
+        # Add zoom buttons for test grid (after grid is created)
+        test_zoom_out_btn = QtWidgets.QPushButton("−")
+        test_zoom_out_btn.setMaximumSize(24, 24)
+        test_zoom_out_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        test_zoom_out_btn.clicked.connect(self.test_grid.zoom_out)
+        
+        test_zoom_in_btn = QtWidgets.QPushButton("+")
+        test_zoom_in_btn.setMaximumSize(24, 24)
+        test_zoom_in_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        test_zoom_in_btn.clicked.connect(self.test_grid.zoom_in)
+        
+        # Insert zoom buttons before refresh button
+        test_header_layout.insertWidget(test_header_layout.count() - 1, test_zoom_out_btn)
+        test_header_layout.insertWidget(test_header_layout.count() - 1, test_zoom_in_btn)
+        
         # Train section (now on right)
         train_widget = QtWidgets.QWidget()
         train_layout = QtWidgets.QVBoxLayout(train_widget)
         train_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Train header with refresh button
+        # Train header with counter and refresh button
         train_header_widget = QtWidgets.QWidget()
         train_header_layout = QtWidgets.QHBoxLayout(train_header_widget)
         train_header_layout.setContentsMargins(0, 0, 0, 0)
@@ -714,6 +910,40 @@ class FolderSelectorWidget(QtWidgets.QWidget):
             }
         """)
         train_header.setAlignment(QtCore.Qt.AlignCenter)
+        
+        # Add train counter display
+        self.train_counter_display = QtWidgets.QWidget()
+        train_counter_layout = QtWidgets.QHBoxLayout(self.train_counter_display)
+        train_counter_layout.setContentsMargins(8, 4, 8, 4)
+        train_counter_layout.setSpacing(4)
+        
+        self.train_count_label = QtWidgets.QLabel("0")
+        self.train_count_label.setStyleSheet("""
+            QLabel {
+                font-weight: bold;
+                font-size: 16px;
+                color: #1976d2;
+            }
+        """)
+        
+        self.train_percentage_label = QtWidgets.QLabel("(0%)")
+        self.train_percentage_label.setStyleSheet("""
+            QLabel {
+                font-size: 12px;
+                color: #666;
+            }
+        """)
+        
+        train_counter_layout.addWidget(self.train_count_label)
+        train_counter_layout.addWidget(self.train_percentage_label)
+        
+        self.train_counter_display.setStyleSheet("""
+            QWidget {
+                background-color: #e3f2fd;
+                border-radius: 4px;
+                padding: 4px;
+            }
+        """)
         
         train_refresh_btn = QtWidgets.QPushButton("🔄 Sort")
         train_refresh_btn.setMaximumWidth(60)
@@ -733,6 +963,9 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         train_refresh_btn.clicked.connect(lambda: self.train_grid.refresh_grid())
         
         train_header_layout.addWidget(train_header)
+        train_header_layout.addWidget(self.train_counter_display)
+        train_header_layout.addStretch()
+        
         train_header_layout.addWidget(train_refresh_btn)
         train_layout.addWidget(train_header_widget)
         
@@ -740,6 +973,45 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         self.train_grid.set_main_widget(self)
         self.train_grid.setStyleSheet("QWidget { border: 2px dashed #2196f3; background-color: #f8f9ff; }")
         train_layout.addWidget(self.train_grid)
+        
+        # Add zoom buttons for train grid (after grid is created)
+        train_zoom_out_btn = QtWidgets.QPushButton("−")
+        train_zoom_out_btn.setMaximumSize(24, 24)
+        train_zoom_out_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+        """)
+        train_zoom_out_btn.clicked.connect(self.train_grid.zoom_out)
+        
+        train_zoom_in_btn = QtWidgets.QPushButton("+")
+        train_zoom_in_btn.setMaximumSize(24, 24)
+        train_zoom_in_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+        """)
+        train_zoom_in_btn.clicked.connect(self.train_grid.zoom_in)
+        
+        # Insert zoom buttons before refresh button
+        train_header_layout.insertWidget(train_header_layout.count() - 1, train_zoom_out_btn)
+        train_header_layout.insertWidget(train_header_layout.count() - 1, train_zoom_in_btn)
         
         # Add to splitter (test first, then train)
         self.train_test_splitter.addWidget(test_widget)
@@ -902,7 +1174,7 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         
     def show_auto_sort_dialog(self):
         """Show the auto-sort settings dialog."""
-        if not self.train_root or not self.test_root:
+        if not hasattr(self, 'train_root') or not hasattr(self, 'test_root') or not self.train_root or not self.test_root:
             QtWidgets.QMessageBox.warning(self, "Warning", "Please select train and test folders first.")
             return
             
