@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="img/dizly.png" alt="Dizly Logo" width="400"/>
+  <img src="img/dizly.png" alt="Dizly Logo" width="600"/>
 </div>
 
 # Dizly - Intelligent Image Dataset Manager
