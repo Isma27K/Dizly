@@ -177,19 +177,19 @@ class AutoSortSettingsDialog(QtWidgets.QDialog):
         
         scroll_layout.addWidget(advanced_group)
         
-        # Test Mode Group
-        test_group = QtWidgets.QGroupBox("Test Mode")
+        # Single Mode Group
+        test_group = QtWidgets.QGroupBox("Single Mode")
         test_layout = QtWidgets.QFormLayout(test_group)
         
-        # Test Mode Checkbox
-        self.test_mode_cb = QtWidgets.QCheckBox("Test mode (sort only one label)")
+        # single Mode Checkbox
+        self.test_mode_cb = QtWidgets.QCheckBox("Run only a single label")
         self.test_mode_cb.setChecked(self.settings['test_mode'])
         test_layout.addRow(self.test_mode_cb)
         
-        # Test Label Selection
+        # single Label Selection
         self.test_label_combo = QtWidgets.QComboBox()
         self.test_label_combo.setEnabled(self.settings['test_mode'])
-        test_layout.addRow("Test Label:", self.test_label_combo)
+        test_layout.addRow("Label:", self.test_label_combo)
         
         scroll_layout.addWidget(test_group)
         
@@ -202,7 +202,7 @@ class AutoSortSettingsDialog(QtWidgets.QDialog):
         • <b>Similarity Thresholds:</b> Higher values = stricter duplicate detection<br>
         • <b>Train Ratio:</b> Proportion of images for training (0.8 = 80% train, 20% test)<br>
         • <b>Content Filtering:</b> Intelligently distributes complex vs simple content between train/test<br>
-        • <b>Test Mode:</b> Process only one label to test settings before full execution<br>
+        • <b>Single Mode:</b> Process only one label execution<br>
         • <b>Model Evaluation:</b> Tests different configurations (slower but more accurate)
         """)
         scroll_layout.addWidget(help_text)

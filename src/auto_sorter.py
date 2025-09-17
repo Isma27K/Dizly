@@ -154,8 +154,9 @@ class AutoSortWorker(QtCore.QThread):
                 return None
                 
             # Initialize the proper ML splitter
-            sys.path.append(str(Path(__file__).parent.parent / "ML"))
-            from sorter import SmartImageSplitter
+            # sys.path.append(str(Path(__file__).parent.parent / "ML"))
+            # from sorter import SmartImageSplitter
+            from ML.sorter import SmartImageSplitter
             
             # Get config file path
             config_file = str(Path(__file__).parent.parent / "auto_sort_settings.json")
@@ -319,7 +320,7 @@ class AutoSortWorker(QtCore.QThread):
                 return False
                 
             # Collect all images from both train and test folders
-            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.JPG', '.JPEG', '.PNG', '.BMP', '.GIF', '.TIFF'}
+            image_extensions = {'.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff'}
             image_paths = []
             
             # Collect from train folder
