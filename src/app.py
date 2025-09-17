@@ -1,4 +1,9 @@
 import sys
+import os
+
+# Suppress Qt ICC profile warnings
+os.environ['QT_LOGGING_RULES'] = 'qt.gui.icc.debug=false'
+
 from PyQt5 import QtWidgets
 from .folder_selector import FolderSelectorWidget
 

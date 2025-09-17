@@ -9,6 +9,7 @@ from .counter_settings import CounterSettings, CounterWidget, CounterSettingsWid
 from .auto_sort_dialog import AutoSortSettingsDialog
 from .auto_sorter import AutoSortWorker
 from .auto_sort_progress import AutoSortProgressDialog, AutoSortResultDialog
+from .image_utils import ImageLoader
 
 
 class ImageGridWidget(QtWidgets.QWidget):
@@ -397,14 +398,14 @@ class ImageThumbnail(QtWidgets.QWidget):
     def load_image(self):
         """Load and scale the image for thumbnail display."""
         try:
-            pixmap = QtGui.QPixmap(self.image_path)
-            if not pixmap.isNull():
-                scaled_pixmap = pixmap.scaled(
-                    self.thumbnail_size - 14, 
-                    self.thumbnail_size - 30,  # More space for filename
-                    QtCore.Qt.KeepAspectRatio,
-                    QtCore.Qt.SmoothTransformation
-                )
+            scaled_pixmap = ImageLoader.load_scaled_pixmap(
+                self.image_path,
+                self.thumbnail_size - 14, 
+                self.thumbnail_size - 30,  # More space for filename
+                QtCore.Qt.KeepAspectRatio,
+                QtCore.Qt.SmoothTransformation
+            )
+            if not scaled_pixmap.isNull():
                 self.image_label.setPixmap(scaled_pixmap)
             else:
                 self.image_label.setText("Error")
@@ -773,7 +774,7 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         test_header_layout = QtWidgets.QHBoxLayout(test_header_widget)
         test_header_layout.setContentsMargins(0, 0, 0, 0)
         
-        test_header = QtWidgets.QLabel("🧪 TEST")
+        test_header = QtWidgets.QLabel("TEST")
         test_header.setStyleSheet("""
             QLabel {
                 font-size: 16px;
@@ -898,7 +899,7 @@ class FolderSelectorWidget(QtWidgets.QWidget):
         train_header_layout = QtWidgets.QHBoxLayout(train_header_widget)
         train_header_layout.setContentsMargins(0, 0, 0, 0)
         
-        train_header = QtWidgets.QLabel("🚂 TRAIN")
+        train_header = QtWidgets.QLabel("TRAIN")
         train_header.setStyleSheet("""
             QLabel {
                 font-size: 16px;

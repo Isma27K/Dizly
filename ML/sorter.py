@@ -46,6 +46,10 @@ from collections import defaultdict
 import warnings
 warnings.filterwarnings("ignore")
 
+# Suppress Qt ICC profile warnings
+import os
+os.environ['QT_LOGGING_RULES'] = 'qt.gui.icc.debug=false'
+
 
 def structural_similarity(img1_path: str, img2_path: str, size=(256, 256)) -> float:
     """Compare two images using SSIM (robust to dimming/rotation)."""

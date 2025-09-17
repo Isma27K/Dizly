@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets, QtGui, QtCore
 import os
+from .image_utils import ImageLoader
 
 
 class ImageViewer(QtWidgets.QLabel):
@@ -27,7 +28,7 @@ class ImageViewer(QtWidgets.QLabel):
         self._scale = 1.0
         self._fit_mode = True
         if path and os.path.exists(path):
-            pix = QtGui.QPixmap(path)
+            pix = ImageLoader.load_pixmap(path)
             if not pix.isNull():
                 self._pixmap = pix
                 self._apply_pixmap()
